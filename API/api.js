@@ -7,11 +7,14 @@ const cors = require('cors');
 const SUCCESS = 0;
 const TRANSACTION_ERROR = 401;
 const USER_NOT_ENROLLED = 402;
-
+const jwt = require('jsonwebtoken');
 //  connectionOptions
 const utils = require('./ibputils.js');
 var contract;
 var username;
+
+
+
 
 utils.connectGatewayFromConfig().then((gateway_contract) => {
 
@@ -38,219 +41,63 @@ app.use(function (req, res, next) {
 
 app.use(cors());
 
-app.get('/', (req, res) => {
-    	res.render('/home/blockchain/Media_IBM/api/templates/index.html')
-});
-///////////////////////////////// User Management APIs ///////////////////////////////////////
-
-//  Purpose:    POST api to register new users with Hyperledger Fabric CA;
-//  Note:       After registeration, users have to enroll to get certificates
-//              to be able to submit transactions to Hyperledger Fabric Peer.
-//  Input:      request.body = {username (string), password (string), usertype (string)}
-//              usertype = {"admin", "producer", "shipper", "retailer", "customer", "regulator"}
-//  Output:     pwd; If password was "", a generated password is returned in response
-//  Usage 1:    "smith", "smithpw", "producer"
-//  Usage 2:    "smith", "",        "producer"
-app.post('/api/register-user/', (request, response) => {
-    console.log("\n--------------  api/registeruser --------------------------");
-    let userId = request.body.userid;
-    let userPwd = request.body.password;
-    let userType = request.body.usertype;
-    let countryname ;
-    try
-    {
-    countryname = request.body.countryname;
-    console.log("\n countryname "+ countryname);
+function verifyToken(req, res, next) {
+    // Get auth header value
+    console.log(req.headers['authorization']);
+    const bearerHeader = req.headers['authorization'];
+    // Check if bearer is undefined
+    if(typeof bearerHeader !== 'undefined') {
+      // Split at the space
+      const bearer = bearerHeader.split(' ');
+      // Get token from array
+      const bearerToken = bearer[1];
+      // Set the token
+      
+      req.token = bearerToken;
+      // Next middleware
+      console.log(req.token);
+      next();
+    } else {
+      // Forbidden
+      res.sendStatus(403);
     }
-    catch (e)
-    {
-        console.log(e);
+  
+  }
+
+  app.post('/api/login', (req, res) => {
+    // Mock user
+    console.log(req.body);
+    let password = req.body.password;
+    console.log(password);
+    if(password!="DuBaraMatPuchna"){
+        res.sendStatus(403);
+    }else{
+    const user = {
+      id: 1, 
+      username: 'admin',
+      email: 'admin@devfolio.com',
+      pass:"DuBaraMatPuchna"
     }
-    console.log("\n userid: " + userId);
-    console.log("\n pwd: " + userPwd);
-    console.log("\n usertype: " + userType);
-
-    //  Note: On the UI, only admin sees the page "Manage Users"
-    //  So, it is assumed that only the admin has access to this api
-    utils.registerUser(userId,userPwd,userType,countryname).then((result) => {
-        console.log("\n----------------- api/registeruser --------------------------");
-        response.json(result);
-    }, (error) => {
-        console.log("\n Error returned from registerUser: " + error);
-        console.log("\n----------------- api/registeruser --------------------------");
-        response.json(error);
+  
+    jwt.sign({user}, 'Hackbash', { expiresIn: '60s' }, (err, token) => {
+      res.json({
+        token
+      });
     });
-
-});  //  process route register-user
-
-//  Purpose:    To enroll registered users with Fabric CA;
-//              A call to enrollUser to Fabric CA generates (and returns) certificates for the given (registered) user;
-//              These certificates are need for subsequent calls to Fabric Peers.
-//  Input:  request.body = { userid, password, usertype }
-//  Iutput:  Certificate on successful enrollment
-//  Usage:  "smith", "smithpw", "producer"
-app.post('/api/enroll-user/', (req, response) => {
-
-    console.log("\n--------------  api/enrollUser --------------------------");
-    let userId = req.body.userid;
-    let userPwd = req.body.password;
-    let userType = req.body.usertype;
-    let countryname ;
-    try
-    {
-    countryname = request.body.countryname;
-    console.log("\n countryname "+ countryname);
-    }
-    catch (e)
-    {
-        console.log(e);
-    }
-
-    console.log("\n userId: " + userId);
-    console.log("\n userPwd: " + userPwd);
-    console.log("\n userType: " + userType);
-    console.log("\n---------------------------------------------------");
-
-    utils.enrollUser(userId, userPwd, userType,countryname).then(result => {
-        console.log("\n result from enrollUser = \n", result)
-        console.log("\n----------------- api/enrollUser --------------------------");
-        response.send(result);
-    }, error => {
-        console.log("\n Error returned from enrollUser: \n" + error);
-        console.log("\n----------------- api/enrollUser --------------------------");
-        response.status(500).send(error.toString());
-    });
-
-})  //  end of app.post('/api/enroll-user/', (req, res) )
-
-app.get('/api/is-user-enrolled/:id', (req, response) => {
-
-    console.log("\n--------------  api/isUserEnrolled --------------------------");
-    let userId = req.params.id;
-
-    console.log("\n userid: " + userId);
-
-    utils.isUserEnrolled(userId).then(result => {
-        console.log("\n result from isUserEnrolled = \n", result)
-        console.log("\n----------------- api/isUserEnrolled --------------------------");
-        response.send(result);
-    }, error => {
-        console.log("\n Error returned from isUserEnrolled: \n" + error);
-        console.log("\n----------------- api/isUserEnrolled --------------------------");
-        response.status(500).send(error.toString());
-    });
-
-}) 
-app.get('/api/users/:usertype', (req, res) => {
-
-    utils.getAllUsers(req.params.usertype).then((result) => {
-        // process response
-        console.log('Process getAllUsers response');
-        result.errorCode = 1;
-        res.json(result);
-    }, (error) => {
-        //  handle error if transaction failed
-        error.errorCode = 0;
-        console.log('Error returned function getAllUsers:  ', error);
-        res.json(error);
-    });
-});
-
-/*
-login()
-input:  userid, password
-output:  userid, password, usertype
-response.errorcode:  SUCCESS, USER_NOT_ENROLLED, TRANSACTION_ERROR
-response.errormessage:  will have text for error message (edited)
-*/
-app.post('/api/login/:type', (req, res) => {
-
-    let userId = req.body.userid;
-    let userPwd = req.body.password;
-    let type = req.params.type;
-
-    console.log("in api/login. userId: " + userId + ", userPwd: " + userPwd);
-
-    utils.setUserContext(userId, userPwd,type)
-        .then(gateway_contract => {
-            // New contract connection
-            contract = gateway_contract;
-            console.log(contract);
-            contract.submitTransaction('getCurrentUserType').then((userType) => {
-                console.log("Successfully submitted getCurrentUserType:" + userType);
-                var result = {};
-                result.errorcode = SUCCESS;   //  SUCCESS = 0
-                result.errormessage = "User " + userId + " is enrolled";
-                var tmp = userType.toString();
-                result.usertype = tmp;
-                res.json(result);
-            }, (error) => {  //  error in transaction submission
-                console.log("ERROR in getCurrentUserType:" + error);
-                var result = {};
-                result.errorcode = TRANSACTION_ERROR;
-                result.errormessage = "Error while invoking transaction in smart contract. ", error;
-                //result.usertype = "";
-                res.json(result);
-            });
-        }, error => {  //  not enrolled
-            var result = {};
-            console.log("ERROR in setUserContext:" + error);
-            result.errorcode = USER_NOT_ENROLLED;
-            result.errormessage = "User is not registered or enrolled. " + error;
-            res.json(result);
-        });
-
-});
-
-// Retrieve calling user id
-app.get('/api/current-user-id', (req, res) => {
-
-    contract.evaluateTransaction('getCurrentUserId').then((result) => {
-        // process response
-        console.log('Transaction complete.');
-        res.json(result.toString());
-    }, (error) => {
-        //  handle error if transaction failed
-        error.errorCode = 0;
-        console.log('Error thrown from tx promise: ', error);
-        res.json(error);
-    });
-});
-
-app.get('/api/current-user-type', (req, res) => {
-
-    contract.evaluateTransaction('getCurrentUserType').then((result) => {
-        // process response
-        console.log('Transaction complete.');
-        res.json(result);
-    }, (error) => {
-        //  handle error if transaction failed
-        error.errorCode = 0;
-        console.log('Error thrown from tx promise: ', error);
-        res.json(error);
-    });
-});
-
-app.post('/api/createAsset', (req, res) => {
-
-    console.log("\n--------------  api/createCar --------------------------");
-    let username = req.body.username;
-    let assetid = req.body.assetid;
-    let owner = req.body.owner;
-    let  assetname = req.body.assetname;
-    let actorname = req.body.actorname;
-    let  writername = req.body.writername;
-    let advancevalue = req.body.advancevalue;
-    let userty = req.body.usertype;
-    console.log("\n assetid: " + assetid);
-    console.log("\n owner: " + owner);
-    console.log("\n assetname: " + assetname);
-    console.log("\n advancevalue: "+ advancevalue );
-    console.log("\n actorname: " + actorname);
-    console.log("\n writername: "+ writername );
+}
+  });
+app.post('/api/CreateAsset', verifyToken, (req, res) => {
+    jwt.verify(req.token, 'Hackbash', (err) => {
+        if(err) {
+          res.sendStatus(403);
+        }else{
+    
+    console.log("\n--------------  api/AdmitAStudent --------------------------");
+    let ItemName = req.body.ItemName;
+    let price = req.body.price;
     console.log("\n---------------------------------------------------");
     
-    utils.createAsset(username,userty,assetid,owner,assetname,advancevalue,actorname,writername)
+    utils.CreateMyAsset(ItemName,price)
     .then(result =>{
         res.json({'errorCode':result})
     }, (error) => {
@@ -260,17 +107,15 @@ app.post('/api/createAsset', (req, res) => {
         res.json(error);
     })
     //console.log("Username:"+username);
+}});
     
-
 });
 
-app.get('/api/SeeAllAsset',(req,res) =>{
-  
-let username = req.query.username;
-let usertype = req.query.usertype;
+app.get('/api/GetRepoInfo',(req,res) =>{
+let ItemName = req.query.ItemName;
 console.log("=================");
-console.log(username);
-utils.SeeAllAssets(username,usertype)
+console.log(ItemName);
+utils.ReadMyAsset(ItemName)
     .then(result =>{
         res.json(result)
     }, (error) => {
@@ -280,51 +125,20 @@ utils.SeeAllAssets(username,usertype)
         res.json(error);
     })
 
-});
-app.get('/api/SeeAllRoyalty',(req,res) =>{
-  
-let username = req.query.username;
-let usertype = req.query.usertype;
-console.log("=================");
-console.log(username);
-utils.SeeAllRoyalty(username,usertype)
-    .then(result =>{
-        res.json(result)
-    }, (error) => {
-        //  handle error if transaction failed
-        error.errorCode = 0;
-        console.log('Error thrown from tx promise: ', error);
-        res.json(error);
-    })
-
-});
-app.get('/api/SeeAllNotPaid',(req,res) =>{
-  
-let username = req.query.username;
-let usertype = req.query.usertype;
-console.log("=================");
-console.log(username);
-utils.SeeAllNotPaid(username,usertype)
-    .then(result =>{
-        res.json(result)
-    }, (error) => {
-        //  handle error if transaction failed
-        error.errorCode = 0;
-        console.log('Error thrown from tx promise: ', error);
-        res.json(error);
-    })
 
 });
 
-app.get('/api/AckAdvancePayment',(req,res) =>{
-  
-let username = req.query.username;
-let assetid = req.query.assetid;
-let usertype = req.query.usertype;
-let countryname = req.query.countryname;
+app.post('/api/AddComponentInfo',verifyToken, (req,res) =>{
+    jwt.verify(req.token, 'Hackbash', (err) => {
+        if(err) {
+          res.sendStatus(403);
+        }else{
+let ItemName  = req.body.ItemName;
+let component_name = req.body.component_name;
+let Dict = req.body.dict;
 console.log("=================");
-console.log(username);
-utils.AckAdvancePayment(username,usertype,assetid,countryname)
+console.log(Dict);
+utils.Buy(ItemName,component_name,JSON.stringify(Dict))
     .then(result =>{
         res.json({'errorCode':result})
     }, (error) => {
@@ -333,143 +147,39 @@ utils.AckAdvancePayment(username,usertype,assetid,countryname)
         console.log('Error thrown from tx promise: ', error);
         res.json(error);
     })
-
+}});
 });
 
-app.get('/api/AdvancePayment',(req,res) =>{
-  
-let username = req.query.username;
-let assetid = req.query.assetid;
-let usertype = req.query.usertype;
-console.log("=================");
-console.log(username);
-utils.AdvancePayment(username,usertype,assetid)
-    .then(result =>{
-        res.json({'errorCode':result})
-    }, (error) => {
-        //  handle error if transaction failed
-        error.errorCode = 404;
-        console.log('Error thrown from tx promise: ', error);
-        res.json(error);
-    })
-
-});
-app.get('/api/play',(req,res) =>{
-  
-let username = req.query.username;
-let assetid = req.query.assetid;
-let usertype = req.query.usertype;
-console.log("=================");
-console.log(username);
-utils.playep(username,usertype,assetid)
-    .then(result =>{
-        res.json({'errorCode':result})
-    }, (error) => {
-        //  handle error if transaction failed
-        error.errorCode = 404;
-        console.log('Error thrown from tx promise: ', error);
-        res.json(error);
-    })
-
-});
-
-
-app.post('/api/BuyAsset',(req,res) =>{
-  
-let username = req.body.username;
-let assetid = req.body.assetid;
-let time = req.body.time;
-let ep = req.body.ep;
-let userty = req.body.usertype;
-console.log(username)
-utils.BuyAsset(username,userty,assetid,time,ep)
-    .then(result =>{
-        res.json({'errorCode':result});
-    }, (error) => {
-        //  handle error if transaction failed
-        error.errorCode = 404;
-        console.log('Error thrown from tx promise: ', error);
-        res.json(error);
-    })
-
-});
-
-app.post('/afterlogin', (req, res) => {
-
-    let userId = req.body.userid;
-    let userPwd = req.body.password;
-    let userty = req.body.usertype;
-
-    console.log("in api/login. userId: " + userId + ", userPwd: " + userPwd);
-
-    utils.setUserContext(userId, userPwd,userty)
-        .then(gateway_contract => {
-            // New contract connection
-            contract = gateway_contract;
-            contract.submitTransaction('getCurrentUserType').then((userType) => {
-                console.log("Successfully submitted getCurrentUserType:" + userType);
-                var result = {};
-                result.errorcode = SUCCESS;   //  SUCCESS = 0
-                result.errormessage = "User " + userId + " is enrolled";
-                var tmp = userType.toString();
-                console.log("Usertype :"+tmp);
-                result.usertype = tmp.substring(1, tmp.length - 1);
-                if(tmp == "Producer"){
-                	username = userId;
-                	return res.send("Producer");
-        			
-                }
-                else if(tmp == "Country"){
-                	console.log("Country");
-                	return res.send("Country");
-                }
-                else if(tmp == "Actor"){
-                    console.log("Actor");
-                    return res.send("Actor");
-                }
-                else if(tmp == "Writer"){
-                    console.log("Writer");
-                    return res.send("Writer");
-                }
-                else{
-                   return res.send("failed");
-                }
-            }, (error) => {  //  error in transaction submission
-                console.log("ERROR in getCurrentUserType:" + error);
-                var result = {};
-                result.errorcode = TRANSACTION_ERROR;
-                result.errormessage = "Error while invoking transaction in smart contract. ", error;
-                //result.usertype = "";
-                res.json(result);
-            });
-        }, error => {  //  not enrolled
-            var result = {};
-            console.log("ERROR in setUserContext:" + error);
-            result.errorcode = USER_NOT_ENROLLED;
-            result.errormessage = "User is not registered or enrolled. " + error;
-            res.json(result);
+app.get('/api/block',(req,res) =>{
+        let bnum = req.query.num;
+        console.log("=================");
+        console.log(bnum);
+        utils.BlockInfo(bnum)
+            .then(result =>{
+                res.json(result)
+            }, (error) => {
+                //  handle error if transaction failed
+                error.errorCode = 404;
+                console.log('Error thrown from tx promise: ', error);
+                res.json(error);
+            })
+        
         });
-
-});
-
-app.get('/api/SeeAll',(req,res) =>{
-  
-let username = req.query.username;
-let usertype = req.query.usertype;
-console.log("=================");
-console.log(username);
-utils.SeeAll(username,usertype)
-    .then(result =>{
-        res.json(result)
-    }, (error) => {
-        //  handle error if transaction failed
-        error.errorCode = 404;
-        console.log('Error thrown from tx promise: ', error);
-        res.json(error);
-    })
-
-});
-
+app.get('/api/Getblockbytx',(req,res) =>{
+            let txid = req.query.txid;
+            console.log("=================");
+            console.log(txid);
+            utils.getTransactionByID(txid)
+                .then(result =>{
+                    res.json(result)
+                }, (error) => {
+                    //  handle error if transaction failed
+                    error.errorCode = 404;
+                    console.log('Error thrown from tx promise: ', error);
+                    res.json(error);
+                })
+            
+            });
 const port = process.env.PORT || 3000;
 app.listen(port, (error) => {
     if (error) {

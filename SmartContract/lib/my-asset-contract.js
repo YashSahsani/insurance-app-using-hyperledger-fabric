@@ -6,10 +6,9 @@
 
 const { Contract } = require('fabric-contract-api');
 const { Shim } = require('fabric-shim');
-const Enum = require('enum');
-const ClaimStatus = new Enum({'ClaimStatusUnknown':0,'ClaimStatusNew':1,'ClaimStatusRejected':2,'ClaimStatusRepair':3,'ClaimStatusReimbursement':4,'ClaimStatusTheftConfirmed':5})
 const perfixUser='preu',perfixContract='prec', prefixRepairOrder='preRO',prefixContractType = 'preCT',perfixClaim='preCL';
-
+const  {Enum} = require('enum');
+const ClaimStatus = new Enum({'ClaimStatusUnknown':0,'ClaimStatusNew':1,'ClaimStatusRejected':2,'ClaimStatusRepair':3,'ClaimStatusReimbursement':4,'ClaimStatusTheftConfirmed':5});
 class MyAssetContract extends Contract {
 
     async CheckUserExist(ctx, username) {
@@ -38,26 +37,6 @@ class MyAssetContract extends Contract {
            const buffer = Buffer.from(JSON.stringify(user));
            await ctx.stub.putState(userKey, buffer);
            return user;
-    }
-    async createContractType(ctx, uuid) {
-        //const ContractType = { shopType, formulaPerDay, maxSumInsured, theftInsured, description, conditions, active, minDurationDays, maxDurationDays };
-        const partial = { uuid };
-        const ContractType={};
-        let contractTypeKey = ctx.stub.createCompositeKey(prefixContractType, [partial.uuid]);
-        const buffer = Buffer.from(JSON.stringify(ContractType));
-        await ctx.stub.putState(contractTypeKey, buffer);
-        return ContractType;
-    }
-    async setActiveContractType(ctx, uuid,active){
-        //const ContractType = { shopType, formulaPerDay, maxSumInsured, theftInsured, description, conditions, active, minDurationDays, maxDurationDays };
-        const req = { uuid, active };
-        let activeContractKey = ctx.stub.createCompositeKey(prefixContractType, [req.uuid]);
-        let ContractTypebytes = await ctx.stub.getState(activeContractKey);
-        let ContractType = JSON.parse(ContractTypebytes.toString());
-        ContractType.active = req.active;
-        const buffer = Buffer.from(JSON.stringify(ContractType));
-        await ctx.stub.putState(activeContractKey, buffer);
-        return ContractType;
     }
     async listContractTypes(ctx,shop_type){
         const iterator = await ctx.stub.getStateByPartialCompositeKey(prefixContractType, []);
@@ -164,6 +143,7 @@ class MyAssetContract extends Contract {
             }
         }
     }
+
     async completeRepairOrder(ctx,uuid){
         let repairOrderKey = await ctx.stub.createCompositeKey(prefixRepairOrder,[uuid]);
         let repairOrderBytes = await ctx.stub.getState(repairOrderKey);
@@ -222,7 +202,6 @@ class MyAssetContract extends Contract {
 
 
     }
-    
     async processClaim(ctx, uuid, username, Contractuuid, date, description, isTheft, status, reimbursable, repaired, fileReference){
         const input = { uuid, Contractuuid, status, reimbursable };
         const claim = { Contractuuid, date, description, isTheft, status, reimbursable, repaired, fileReference };
@@ -323,17 +302,54 @@ class MyAssetContract extends Contract {
         
     }
     }
-    async processTheftClaim(ctx, uuid, ContractUUID, Date, Description, IsTheft, Status, Reimbursable, Repaired, FileReference, claimKey) {
-        var claim = { ContractUUID, Date, Description, IsTheft, Status, Reimbursable, Repaired, FileReference };
-        let claimKey = ctx.stub.createCompositeKey(prefixClaim, [ContractUUID, uuid]);
-        if(claim.IsTheft) {
-            claim.Status = "ClaimStatusTheftConfirmed";
-        } else {
-            claim.Status = "ClaimStatusRejected";
+    
+    async  setActiveContractType(ctx,uuid,active){
+        let contractKey = await ctx.stub.createCompositeKey(prefixContractType,[uuid]);
+        let contracttypebytes =await ctx.stub.getState(contractKey);
+        if(contracttypebytes.length == 0){
+            throw new Error('can\'t find contract type');
         }
-        const buffer = Buffer.from(JSON.stringify(claim));
-        await ctx.stub.putState(claimKey, buffer);
-        return claim;
+        let contractType = await JSON.parse(contracttypebytes.toString());
+        contractType['active'] = active;
+        let buffer = Buffer.from(JSON.stringify(contractType))
+        await ctx.stub.putState(contractKey,buffer);
+        return contractType;
+
+    }    
+    async createContractType(ctx,uuid,dict){
+        let contractTypeValue = dict;
+        if(contractTypeValue.length != 9){
+            throw new Error('Argument given are incorrect');
+        }
+        let contractTypeKey = await ctx.stub.CreateCompositeKey(prefixContractType,[uuid]);
+        let buffer = Buffer.from(JSON.stringify(contractTypeValue));
+        await ctx.stub.putState(contractTypeKey,buffer);
+        return contractTypeValue;
+    }
+    
+    async processTheftClaim(ctx,uuid,contractUUID,IsTheft,file_refrence){
+
+
+        let key = await ctx.stub.CreateCompositeKey(perfixClaim,[contractUUID,uuid]);
+        let claimAsBytes = await ctx.stub.getState(key);
+        let claim = JSON.parse(claimAsBytes.toString());
+
+        if(!claim.IsTheft || claim.Status != ClaimStatus.get(1).key){
+            throw new Error("Claim is either not related to theft, or has invalid status.");
+
+        }
+        
+        if(IsTheft){
+            claim['Status'] = ClaimStatus.get(5).key;
+        }else{
+            claim['Status'] = ClaimStatus.get(4).key;
+        }
+        claim['FileReference'] = file_refrence;
+
+        claimAsBytes = Buffer.from(JSON.stringify(claim));
+
+        await ctx.stub.putState(key,claimAsBytes);
+
     }
 }
 
