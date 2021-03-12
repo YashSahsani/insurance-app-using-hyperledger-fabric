@@ -86,18 +86,31 @@ function verifyToken(req, res, next) {
     });
 }
   });
-app.post('/api/CreateAsset', verifyToken, (req, res) => {
+app.post('/api/CreateContract', verifyToken, (req, res) => {
     jwt.verify(req.token, 'Hackbash', (err) => {
         if(err) {
           res.sendStatus(403);
         }else{
     
-    console.log("\n--------------  api/AdmitAStudent --------------------------");
-    let ItemName = req.body.ItemName;
-    let price = req.body.price;
+    console.log("\n--------------  api/createContract --------------------------");
+    let uuid = req.body.uuid;
+    let contractuuid = req.body.contractuuid;
+    let username = req.body.username;
+    let password = req.body.password
+    let sdate = req.body.sdate;
+    let ldate = req.body.ldate;
+    let fname = req.body.fname;
+    let lname = req.body.lname;
     console.log("\n---------------------------------------------------");
-    
-    utils.CreateMyAsset(ItemName,price)
+    console.log(uuid);
+    console.log(contractuuid);
+    console.log(username);
+    console.log(password);
+    console.log(sdate);
+    console.log(ldate);
+    console.log(fname);
+    console.log(lname);
+    utils.CreateContract(uuid,contractuuid,username,password,fname,lname,sdate,ldate)
     .then(result =>{
         res.json({'errorCode':result})
     }, (error) => {
@@ -111,11 +124,11 @@ app.post('/api/CreateAsset', verifyToken, (req, res) => {
     
 });
 
-app.get('/api/GetRepoInfo',(req,res) =>{
-let ItemName = req.query.ItemName;
+app.get('/api/GetContractList',(req,res) =>{
+let username = req.query.username;
 console.log("=================");
-console.log(ItemName);
-utils.ReadMyAsset(ItemName)
+console.log(username);
+utils.GetlistOfContract(username)
     .then(result =>{
         res.json(result)
     }, (error) => {
@@ -128,17 +141,16 @@ utils.ReadMyAsset(ItemName)
 
 });
 
-app.post('/api/AddComponentInfo',verifyToken, (req,res) =>{
+app.post('/api/AuthUser',verifyToken, (req,res) =>{
     jwt.verify(req.token, 'Hackbash', (err) => {
         if(err) {
           res.sendStatus(403);
         }else{
-let ItemName  = req.body.ItemName;
-let component_name = req.body.component_name;
-let Dict = req.body.dict;
-console.log("=================");
-console.log(Dict);
-utils.Buy(ItemName,component_name,JSON.stringify(Dict))
+let username  = req.body.username;
+let  password = req.body.password;
+
+
+utils.AuthUser(username,password)
     .then(result =>{
         res.json({'errorCode':result})
     }, (error) => {

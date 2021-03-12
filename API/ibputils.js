@@ -51,7 +51,7 @@ console.log("*********************** connectGatewayFromConfig function: ********
     //connect to our channel that has been created on IBM yash/Internship_projects Platform
     const network = await gateway.getNetwork('mychannel');
     //connect to our insurance contract that has been installed / instantiated on IBM yash/Internship_projects Platform
-     contract = await network.getContract('Insurance'); 
+     contract = await network.getContract('NewSmartCOntract'); 
   } catch (error) {
     console.error(`Failed to submit transaction: ${error}`);
   }finally{
@@ -64,9 +64,10 @@ return contract;
 
 
 
-utils.CreateMyAsset = async function(uuid,contractTypeUUID,username,password,fname,lname,startdate,enddate) {
+utils.CreateContract = async function(uuid,contractTypeUUID,username,password,fname,lname,startdate,enddate) {
      
-  const connectionProfileJson = (await fs.readFileSync('gatewayv2/InsuranceOrg1GatewayConnection.json')).toString();
+  const connectionProfileJson = ( fs.readFileSync('gatewayv2/InsuranceOrg1GatewayConnection.json')).toString();
+  
     const connectionProfile = JSON.parse(connectionProfileJson);
     const walletPath = path.join(process.cwd(), '/walletsv2/Org1');
     const wallet =  await Wallets.newFileSystemWallet(walletPath);
@@ -75,15 +76,15 @@ utils.CreateMyAsset = async function(uuid,contractTypeUUID,username,password,fna
 
         const userGateway = new Gateway();
         await userGateway.connect(connectionProfile, { wallet, identity: id, discovery:{ "enabled": true, "asLocalhost": true }});
-
+        
         network = await userGateway.getNetwork('mychannel');
 
         // Get addressability to the smart contract as specified in config
         var res = {}
-        contract = await network.getContract('Insurance');
+        contract =  network.getContract('NewSmartCOntract');
         const transaction = contract.createTransaction('createContract');
         res['txId']=transaction.getTransactionId();
-            
+        console.log('here');
         await transaction.submit( uuid,contractTypeUUID,username,password,fname,lname,startdate,enddate);
         console.log('Transaction has been submitted');
         await network.addBlockListener(async (event) => {
@@ -104,7 +105,7 @@ utils.CreateMyAsset = async function(uuid,contractTypeUUID,username,password,fna
         return res; 
     }
 }
-
+/*
 utils.CompletRepairOrder = async function(uuid) {
      
   const connectionProfileJson = (await fs.readFileSync('gatewayv2/InsuranceOrg1GatewayConnection.json')).toString();
@@ -121,7 +122,7 @@ utils.CompletRepairOrder = async function(uuid) {
 
         // Get addressability to the smart contract as specified in config
         var res = {}
-        contract = await network.getContract('Insurance');
+        contract = await network.getContract('NewSmartCOntract');
         const transaction = contract.createTransaction('createContract');
         res['txId']=transaction.getTransactionId();
             
@@ -144,8 +145,8 @@ utils.CompletRepairOrder = async function(uuid) {
         res.error = error.message;
         return res; 
     }
-}
-utils.Buy = async function(ItemName,Component_name ,dict) {
+}*/
+/*utils.Buy = async function(ItemName,Component_name ,dict) {
      
      const connectionProfileJson = (await fs.readFileSync('gatewayv2/InsuranceOrg1GatewayConnection.json')).toString();
     const connectionProfile = JSON.parse(connectionProfileJson);
@@ -197,9 +198,93 @@ utils.Buy = async function(ItemName,Component_name ,dict) {
     return response; 
 }
 }
+*/
+utils.AuthUser = async function(username,password) {
+     
+  const connectionProfileJson = (await fs.readFileSync('gatewayv2/InsuranceOrg1GatewayConnection.json')).toString();
+ const connectionProfile = JSON.parse(connectionProfileJson);
+ const walletPath = path.join(process.cwd(), '/walletsv2/Org1');
+ const wallet =  await Wallets.newFileSystemWallet(walletPath);
+     let id = 'Org1 admin';
+ 
+try{ 
+
+ const userGateway = new Gateway();
+ await userGateway.connect(connectionProfile, { wallet, identity: id, discovery:{ "enabled": true, "asLocalhost": true }});
+ network = await userGateway.getNetwork('mychannel');
+
+ // Get addressability to the smart contract as specified in config
+ contract = await network.getContract('NewSmartCOntract');
+ var res={};
+ const transaction = contract.createTransaction('authUser');
+ res['txId']=transaction.getTransactionId();
+         
+     
+     await network.addBlockListener(async (event) => {
+       // Handle block event
+       console.log(event.blockNumber.getLowBits());
+        res['blockNumber']=event.blockNumber.getLowBits();
+       // Listener may remove itself if desired
+   });
+    
+     res['status']="Transaction completed";
+
+ await transaction.submit(username,password);
+ console.log('Transaction has been submitted');
+ await network.addBlockListener(async (event) => {
+   // Handle block event
+   console.log(event.blockNumber.getLowBits());
+    res['blockNumber']=event.blockNumber.getLowBits();
+   // Listener may remove itself if desired
+});
+
+ res['status']="Transaction completed";
 
 
+ // Disconnect from the gateway.
+ await userGateway.disconnect();
+ return "Transaction completed";
 
+} catch (error) {
+ console.error(`Failed to submit transaction: ${error}`);
+ response.error = error.message;
+ return response; 
+}
+}
+
+utils.GetlistOfContract = async function(username) {
+
+  try {
+    const connectionProfileJson = (await fs.readFileSync('gatewayv2/InsuranceOrg1GatewayConnection.json')).toString();
+    const connectionProfile = JSON.parse(connectionProfileJson);
+    const walletPath = path.join(process.cwd(), '/walletsv2/Org1');
+    const wallet =  await Wallets.newFileSystemWallet(walletPath);
+        let id = 'Org1 admin'; 
+      
+      const userGateway = new Gateway();
+      await userGateway.connect(connectionProfile, { wallet, identity: id, discovery:{ "enabled": true, "asLocalhost": true }});
+
+      
+      network = await userGateway.getNetwork('mychannel');
+
+      // Get addressability to the smart contract as specified in config
+      contract = await network.getContract('NewSmartCOntract');
+   
+      
+      const result = await contract.evaluateTransaction('listContract',username);
+
+      console.log(`Transaction has been evaluated, result is: ${result.toString()}`);
+
+      return JSON.parse(result.toString());
+
+  } catch (error) {
+      console.error(`Failed to evaluate transaction: ${error}`);
+      response.error = error.message;
+      return response;
+  }
+}
+
+/*
 utils.ReadMyAsset = async function(ItemName) {
 
     try {
@@ -230,7 +315,7 @@ utils.ReadMyAsset = async function(ItemName) {
         response.error = error.message;
         return response;
     }
-}
+}&*/
 utils.BlockInfo = async function(bnum) {
 
     try {
