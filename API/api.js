@@ -140,6 +140,56 @@ utils.GetlistOfContract(username)
 
 
 });
+app.get('/api/GetContractListType',(req,res) =>{
+    let shop_type = req.query.shop_type;
+    console.log("=================");
+    console.log(username);
+    utils.GetlistOfTypeContract(shop_type)
+        .then(result =>{
+            res.json(result)
+        }, (error) => {
+            //  handle error if transaction failed
+            error.errorCode = 404;
+            console.log('Error thrown from tx promise: ', error);
+            res.json(error);
+        })
+    
+    
+    });
+
+    app.get('/api/GetlistOfRepairOrders',(req,res) =>{
+        let username = req.query.username;
+        console.log("=================");
+        console.log(username);
+        utils.GetlistOfRepairOrders()
+            .then(result =>{
+                res.json(result)
+            }, (error) => {
+                //  handle error if transaction failed
+                error.errorCode = 404;
+                console.log('Error thrown from tx promise: ', error);
+                res.json(error);
+            })
+        
+        
+        });
+app.get('/api/GetlistClaims',(req,res) =>{
+            let username = req.query.username;
+            console.log("=================");
+            console.log(username);
+            utils.GetlistClaims()
+                .then(result =>{
+                    res.json(result)
+                }, (error) => {
+                    //  handle error if transaction failed
+                    error.errorCode = 404;
+                    console.log('Error thrown from tx promise: ', error);
+                    res.json(error);
+                })
+            
+            
+});
+            
 
 app.post('/api/AuthUser',verifyToken, (req,res) =>{
     jwt.verify(req.token, 'Hackbash', (err) => {
@@ -151,6 +201,141 @@ let  password = req.body.password;
 
 
 utils.AuthUser(username,password)
+    .then(result =>{
+        res.json({'errorCode':result})
+    }, (error) => {
+        //  handle error if transaction failed
+        error.errorCode = 404;
+        console.log('Error thrown from tx promise: ', error);
+        res.json(error);
+    })
+}});
+});
+app.post('/api/ProcessTheftClaim',verifyToken, (req,res) =>{
+    jwt.verify(req.token, 'Hackbash', (err) => {
+        if(err) {
+          res.sendStatus(403);
+        }else{
+let uuid  = req.body.username;
+let  contractUUID = req.body.password;
+let IsTheft  = req.body.username;
+let  file_refrence = req.body.password;
+
+
+utils.ProcessTheftClaim(uuid,contractUUID,IsTheft,file_refrence)
+    .then(result =>{
+        res.json({'errorCode':result})
+    }, (error) => {
+        //  handle error if transaction failed
+        error.errorCode = 404;
+        console.log('Error thrown from tx promise: ', error);
+        res.json(error);
+    })
+}});
+});
+app.post('/api/CreateContractType',verifyToken, (req,res) =>{
+    jwt.verify(req.token, 'Hackbash', (err) => {
+        if(err) {
+          res.sendStatus(403);
+        }else{
+let uuid  = req.body.uuid;
+let  dict = req.body.dict;
+
+
+
+utils.CreateContractType(uuid,dict)
+    .then(result =>{
+        res.json({'errorCode':result})
+    }, (error) => {
+        //  handle error if transaction failed
+        error.errorCode = 404;
+        console.log('Error thrown from tx promise: ', error);
+        res.json(error);
+    })
+}});
+});
+app.post('/api/SetActiveContractType',verifyToken, (req,res) =>{
+    jwt.verify(req.token, 'Hackbash', (err) => {
+        if(err) {
+          res.sendStatus(403);
+        }else{
+let uuid  = req.body.uuid;
+let  active = req.body.active;
+
+
+
+utils.SetActiveContractType(uuid,active)
+    .then(result =>{
+        res.json({'errorCode':result})
+    }, (error) => {
+        //  handle error if transaction failed
+        error.errorCode = 404;
+        console.log('Error thrown from tx promise: ', error);
+        res.json(error);
+    })
+}});
+});
+
+
+app.post('/api/ProcessClaim',verifyToken, (req,res) =>{
+    jwt.verify(req.token, 'Hackbash', (err) => {
+        if(err) {
+          res.sendStatus(403);
+        }else{
+let uuid  = req.body.uuid;
+let  username = req.body.username;
+let Contractuuid  = req.body.Contractuuid;
+let  date = req.body.date;
+let description  = req.body.description;
+let  isTheft = req.body.isTheft;
+let status  = req.body.status;
+let  reimbursable = req.body.reimbursable;
+let repaired  = req.body.repaired;
+let  fileReference = req.body.fileReference;
+utils.ProcessClaim(uuid, username, Contractuuid, date, description, isTheft, status, reimbursable, repaired, fileReference)
+    .then(result =>{
+        res.json({'errorCode':result})
+    }, (error) => {
+        //  handle error if transaction failed
+        error.errorCode = 404;
+        console.log('Error thrown from tx promise: ', error);
+        res.json(error);
+    })
+}});
+});
+
+app.post('/api/FileClaim',verifyToken, (req,res) =>{
+    jwt.verify(req.token, 'Hackbash', (err) => {
+        if(err) {
+          res.sendStatus(403);
+        }else{
+let uuid  = req.body.uuid;
+let Contractuuid  = req.body.Contractuuid;
+let  date = req.body.date;
+let description  = req.body.description;
+let  isTheft = req.body.isTheft;
+
+utils.FileClaim(uuid,Contractuuid,date,description,isTheft)
+    .then(result =>{
+        res.json({'errorCode':result})
+    }, (error) => {
+        //  handle error if transaction failed
+        error.errorCode = 404;
+        console.log('Error thrown from tx promise: ', error);
+        res.json(error);
+    })
+}});
+});
+
+app.post('/api/CompletRepairOrder',verifyToken, (req,res) =>{
+    jwt.verify(req.token, 'Hackbash', (err) => {
+        if(err) {
+          res.sendStatus(403);
+        }else{
+let uuid  = req.body.uuid;
+
+
+utils.CompletRepairOrder(uuid)
     .then(result =>{
         res.json({'errorCode':result})
     }, (error) => {

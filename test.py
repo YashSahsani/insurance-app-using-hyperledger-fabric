@@ -10,7 +10,7 @@ for i in range(10):
     #    result = requests.post("https:///localhost:3000/api/CreateAsset",headers={"Authorization":"Bearer "+a['token']},json=data_n)
     #    print(result.text)
     data_n = {
-  "uuid": "item1",
+  "uuid": "item2",
   "contractuuid": "item1ct",
   "username": "yash",
   "password": "yashpw",
