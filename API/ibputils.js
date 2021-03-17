@@ -267,46 +267,7 @@ utils.SetActiveContractType = async function(uuid,active) {
         return res; 
     }
 }
-utils.CreateContractType = async function(uuid,dict) {
-     
-  const connectionProfileJson = ( fs.readFileSync('gatewayv2/InsuranceOrg1GatewayConnection.json')).toString();
-    const connectionProfile = JSON.parse(connectionProfileJson);
-    const walletPath = path.join(process.cwd(), '/walletsv2/Org1');
-    const wallet =  await Wallets.newFileSystemWallet(walletPath);
-        let id = 'Org1 admin';
-      try{ 
 
-        const userGateway = new Gateway();
-        await userGateway.connect(connectionProfile, { wallet, identity: id, discovery:{ "enabled": true, "asLocalhost": true }});
-
-        network = await userGateway.getNetwork('mychannel');
-
-        // Get addressability to the smart contract as specified in config
-        var res = {}
-        contract =  network.getContract('NewSmartCOntract');
-        const transaction = contract.createTransaction('createContractType');
-        res['txId']=transaction.getTransactionId();
-            
-        await transaction.submit( uuid,dict );
-        console.log('Transaction has been submitted');
-        await network.addBlockListener(async (event) => {
-          // Handle block event
-          console.log(event.blockNumber.getLowBits());
-           res['blockNumber']=event.blockNumber.getLowBits();
-          // Listener may remove itself if desired
-      });
-       
-        res['status']="Transaction completed";
-        // Disconnect from the gateway.
-         userGateway.disconnect();
-        return res;
-
-    } catch (error) {
-        console.error(`Failed to submit transaction: ${error}`);
-        res.error = error.message;
-        return res; 
-    }
-}
 utils.CreateContractType = async function(uuid,dict) {
      
   const connectionProfileJson = ( fs.readFileSync('gatewayv2/InsuranceOrg1GatewayConnection.json')).toString();
