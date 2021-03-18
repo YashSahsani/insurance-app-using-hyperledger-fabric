@@ -7,8 +7,7 @@
 const { Contract } = require('fabric-contract-api');
 const { Shim } = require('fabric-shim');
 const perfixUser='preu',perfixContract='prec', prefixRepairOrder='preRO',prefixContractType = 'preCT',perfixClaim='preCL';
-const  {Enum} = require('enum');
-const ClaimStatus = new Enum({'ClaimStatusUnknown':0,'ClaimStatusNew':1,'ClaimStatusRejected':2,'ClaimStatusRepair':3,'ClaimStatusReimbursement':4,'ClaimStatusTheftConfirmed':5});
+
 class MyAssetContract extends Contract {
 
     async CheckUserExist(ctx, username) {
@@ -160,65 +159,44 @@ class MyAssetContract extends Contract {
         if(Claimbytes.length != 0){
             let Claim = await JSON.parse(Claimbytes.toString());
             Claim['Repair'] = true;
-            Claimbytes = await Buffer.from(JSON.stringify(Claim));
+            Claimbytes = Buffer.from(JSON.stringify(Claim));
             await ctx.stub.putState(ClaimKey,Claimbytes);
         }
 
 
     }
-    async fileClaim(ctx,uuid,contract_uuid,date,description,is_theft){
-        let status = ClaimStatus.get(1).value;
-        let allResults = [];
-        claim = {contract_uuid,date,description,is_theft,status};
-        let iterator = await ctx.stub.getStateByPartialCompositeKey(perfixContract,[]);
-        while (true) {
-            const res = await iterator.next();
-            const Key = res.value.key;
-            let splitk = await ctx.stub.splitCompositeKey(Key);
-            if(splitk[1] == uuid){
-            let Record;
-            try {
-                Record = JSON.parse(res.value.value.toString('utf8'));
-
-            } catch (err) {
-                 console.log(err);
-                Record = res.value.value.toString('utf8');
-            }
-            allResults.push({
-                    Key,
-                    Record
-                });
-            break;
-            }
-        }
-        let claimKey = await ctx.stub.CreateCompositeKey(perfixClaim,[contract_uuid,uuid]);
-        let claimbytes = await Buffer.from(JSON.stringify(claimKey));
+    async fileClaim(ctx,username,uuid,contract_uuid,date,description,is_theft){
+        let status = 'ClaimStatusNew';
+        let claim = {contract_uuid,date,description,is_theft,status};
+        let claimKey = await ctx.stub.createCompositeKey(perfixClaim,[contract_uuid,uuid]);
+        let claimbytes =  Buffer.from(JSON.stringify(claim));
         await ctx.stub.putState(claimKey,claimbytes);
-        allResults['ClaimIndex'] = claimKey;
-        let contractKey = await ctx.stub.createCompositeKey(perfixContract,[allResults['username'],uuid]);
+        let ContractKey = await ctx.stub.createCompositeKey(perfixContract,[username,uuid]);
+        let ContractdataByte = await ctx.stub.getState(ContractKey);
+        let allResults = await JSON.parse(ContractdataByte.toString());
+        allResults['claimIndex'] = claimKey;
         let  buffer = Buffer.from(JSON.stringify(allResults));
-        await ctx.stub.putState(contractKey,buffer);
+        await ctx.stub.putState(ContractKey,buffer);
         return allResults;
-
-
+        
     }
-    async processClaim(ctx, uuid, username, Contractuuid, date, description, isTheft, status, reimbursable, repaired, fileReference){
-        const input = { uuid, Contractuuid, status, reimbursable };
-        const claim = { Contractuuid, date, description, isTheft, status, reimbursable, repaired, fileReference };
-        let claimKey = ctx.stub.createCompositeKey(prefixClaim, [input.Contractuuid, input.uuid]);
 
-        if(!claim.IsTheft && claim.Status != "ClaimStatusNew"){
-            throw Error("Cannot change the status of a non-new claim.");
+    async processClaim(ctx, uuid, username, Contractuuid, status, reimbursable){
+        const input = { uuid, Contractuuid, status, reimbursable };
+        let claimKey =  await ctx.stub.createCompositeKey(perfixClaim, [input.Contractuuid, input.uuid]);
+        let claimBytes = await ctx.stub.getState(claimKey);
+        let claim = JSON.parse(claimBytes.toString());
+        
+        if(!claim.is_theft && claim.status != "ClaimStatusNew"){
+            throw new Error("Cannot change the status of a non-new claim.");
         }
-        if(claim.IsTheft && claim.Status == "ClaimStatusNew"){
-            throw Error("Theft must first be confirmed by authorities.");
+        if(claim.is_theft && claim.status == "ClaimStatusNew"){
+            throw new Error("Theft must first be confirmed by authorities.");
         }
         claim.status = input.status;
-
-        let ContractKey = ctx.stub.createCompositeKey(perfixContract,[username,uuid])
+        let ContractKey = await ctx.stub.createCompositeKey(perfixContract,[username,uuid])
         var buffer = await ctx.stub.getState(ContractKey);
         const contract = JSON.parse(buffer.toString());
-
         switch(input.status){
             case "ClaimStatusRepair":
                 if(claim.isTheft){
@@ -253,6 +231,7 @@ class MyAssetContract extends Contract {
 
         }
     }
+
     async listClaims(ctx,status){
         const iterator = await ctx.stub.getStateByPartialCompositeKey(perfixClaim, []);
 
@@ -316,40 +295,38 @@ class MyAssetContract extends Contract {
         return contractType;
 
     }    
-    async createContractType(ctx,uuid,dict){
-        let contractTypeValue = dict;
-        if(contractTypeValue.length != 9){
-            throw new Error('Argument given are incorrect');
-        }
-        let contractTypeKey = await ctx.stub.CreateCompositeKey(prefixContractType,[uuid]);
+    async createContractType(ctx,uuid,Contractuuid,shopType,formulaPerDay,maxSumInsured,theftInsured,description,conditions,minDurationDays ,maxDurationDays)
+    {
+        let contractTypeValue = {Contractuuid,shopType,formulaPerDay,maxSumInsured,theftInsured,description,conditions,minDurationDays ,maxDurationDays};
+    
+        let contractTypeKey = await ctx.stub.createCompositeKey(prefixContractType,[uuid]);
         let buffer = Buffer.from(JSON.stringify(contractTypeValue));
         await ctx.stub.putState(contractTypeKey,buffer);
         return contractTypeValue;
     }
     
-    async processTheftClaim(ctx,uuid,contractUUID,IsTheft,file_refrence){
+    
 
-
-        let key = await ctx.stub.CreateCompositeKey(perfixClaim,[contractUUID,uuid]);
+    async processTheftClaim(ctx,contractUUID,uuid,file_refrence,IsTheft){
+        let key = await ctx.stub.createCompositeKey(perfixClaim,[contractUUID,uuid]);
         let claimAsBytes = await ctx.stub.getState(key);
         let claim = JSON.parse(claimAsBytes.toString());
-
-        if(!claim.IsTheft || claim.Status != ClaimStatus.get(1).key){
+        if(!claim.is_theft || claim.status != 'ClaimStatusNew'){
             throw new Error("Claim is either not related to theft, or has invalid status.");
 
         }
         
         if(IsTheft){
-            claim['Status'] = ClaimStatus.get(5).key;
+
+            claim['Status'] = 'ClaimStatusTheftConfirmed';
         }else{
-            claim['Status'] = ClaimStatus.get(4).key;
+            claim['Status'] = 'ClaimStatusRejected';
         }
         claim['FileReference'] = file_refrence;
 
         claimAsBytes = Buffer.from(JSON.stringify(claim));
 
         await ctx.stub.putState(key,claimAsBytes);
-
     }
 }
 

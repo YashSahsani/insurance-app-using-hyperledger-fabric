@@ -294,14 +294,9 @@ app.post('/api/ProcessClaim',verifyToken, (req,res) =>{
 let uuid  = req.body.uuid;
 let  username = req.body.username;
 let Contractuuid  = req.body.Contractuuid;
-let  date = req.body.date;
-let description  = req.body.description;
-let  isTheft = req.body.isTheft;
 let status  = req.body.status;
 let  reimbursable = req.body.reimbursable;
-let repaired  = req.body.repaired;
-let  fileReference = req.body.fileReference;
-utils.ProcessClaim(uuid, username, Contractuuid, date, description, isTheft, status, reimbursable, repaired, fileReference)
+utils.ProcessClaim(uuid, username, Contractuuid, status, reimbursable)
     .then(result =>{
         res.json({'errorCode':result})
     }, (error) => {
@@ -318,13 +313,14 @@ app.post('/api/FileClaim',verifyToken, (req,res) =>{
         if(err) {
           res.sendStatus(403);
         }else{
+let username = req.body.username;
 let uuid  = req.body.uuid;
 let Contractuuid  = req.body.Contractuuid;
 let  date = req.body.date;
 let description  = req.body.description;
 let  isTheft = req.body.isTheft;
 
-utils.FileClaim(uuid,Contractuuid,date,description,isTheft)
+utils.FileClaim(username,uuid,Contractuuid,date,description,isTheft)
     .then(result =>{
         res.json({'errorCode':result})
     }, (error) => {

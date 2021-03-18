@@ -146,7 +146,7 @@ utils.CompletRepairOrder = async function(uuid) {
         return res; 
     }
 }
-utils.FileClaim = async function(uuid,contract_uuid,date,description,is_theft) {
+utils.FileClaim = async function(username,uuid,contract_uuid,date,description,is_theft) {
      
   const connectionProfileJson = ( fs.readFileSync('gatewayv2/InsuranceOrg1GatewayConnection.json')).toString();
     const connectionProfile = JSON.parse(connectionProfileJson);
@@ -166,7 +166,7 @@ utils.FileClaim = async function(uuid,contract_uuid,date,description,is_theft) {
         const transaction = contract.createTransaction('fileClaim');
         res['txId']=transaction.getTransactionId();
             
-        await transaction.submit( uuid,contract_uuid,date,description,is_theft );
+        await transaction.submit( username,uuid,contract_uuid,date,description,is_theft );
         console.log('Transaction has been submitted');
         await network.addBlockListener(async (event) => {
           // Handle block event
@@ -186,7 +186,7 @@ utils.FileClaim = async function(uuid,contract_uuid,date,description,is_theft) {
         return res; 
     }
 }
-utils.ProcessClaim = async function(uuid, username, Contractuuid, date, description, isTheft, status, reimbursable, repaired, fileReference) {
+utils.ProcessClaim = async function(uuid, username, Contractuuid,  status, reimbursable) {
      
   const connectionProfileJson = ( fs.readFileSync('gatewayv2/InsuranceOrg1GatewayConnection.json')).toString();
     const connectionProfile = JSON.parse(connectionProfileJson);
@@ -206,7 +206,7 @@ utils.ProcessClaim = async function(uuid, username, Contractuuid, date, descript
         const transaction = contract.createTransaction('processClaim');
         res['txId']=transaction.getTransactionId();
             
-        await transaction.submit( uuid, username, Contractuuid, date, description, isTheft, status, reimbursable, repaired, fileReference );
+        await transaction.submit( uuid, username, Contractuuid,  status, reimbursable,  );
         console.log('Transaction has been submitted');
         await network.addBlockListener(async (event) => {
           // Handle block event
