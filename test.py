@@ -7,38 +7,45 @@ for i in range(10):
     a = json.loads(requests.post("http://localhost:3000/api/login",json=data).text)
     print(a)
     print("json token generated for post request")
-    data_n = {"uuid": "item5","contractuuid": "item5","username": "yash","password": "yashpw","fname": "yash","lname": "Sahsani","sdate": str(datetime.date.today()), "ldate": str(datetime.date.today() + datetime.timedelta(10))}
-    #result = requests.post("http://localhost:3000/api/CreateContract",headers={"Authorization":"Bearer "+a['token']},json=data_n)
-    #print(result.text)
-    #data_n = {"uuid": "item5",
-    #"Contractuuid": 'item5',
-    #"shopType": 'B',
-    #"formulaPerDay": 'price * 0.02',
-    #"maxSumInsured": 3500.00,
-    #"theftInsured": True,
-    #"description": 'Insure Your Bike',
-    #"conditions": 'Simple contract terms.',
-    #"minDurationDays": 3,
-    #"maxDurationDays": 10,
-  #}
-   # result = requests.post("http://localhost:3000/api/CreateContractType",headers={"Authorization":"Bearer "+a['token']},json=data_n)
-    #print(result.text)
-    #data_m = {"uuid": "item5","active":True}
-    #result = requests.post("http://localhost:3000/api/SetActiveContractType",headers={"Authorization":"Bearer "+a['token']},json=data_m)
-    #print(result.text)
+    time.sleep(2)
+    data_n = {"uuid": "item6","contractuuid": "item6","username": "dhrumil","password": "dhrumilpw","fname": "dhrumil","lname": "Sahsani","sdate": str(datetime.date.today()), "ldate": str(datetime.date.today() + datetime.timedelta(10))}
+    result = requests.post("http://localhost:3000/api/CreateContract",headers={"Authorization":"Bearer "+a['token']},json=data_n)
+    print(result.text)
+    print("Contract Created")
+    time.sleep(2)
+    data_n = {"uuid": "item6",
+    "Contractuuid": 'item6',
+    "shopType": 'B',
+    "formulaPerDay": 'price * 0.02',
+    "maxSumInsured": 3500.00,
+    "theftInsured": True,
+    "description": 'Insure Your Bike',
+    "conditions": 'Simple contract terms.',
+    "minDurationDays": 3,
+    "maxDurationDays": 10,
+  }
+    result = requests.post("http://localhost:3000/api/CreateContractType",headers={"Authorization":"Bearer "+a['token']},json=data_n)
+    print(result.text)
+    print("Contract type Created")
+    time.sleep(2)
+    data_m = {"uuid": "item6","active":True}
+    result = requests.post("http://localhost:3000/api/SetActiveContractType",headers={"Authorization":"Bearer "+a['token']},json=data_m)
+    print(result.text)
+    print("SetActiveContractType Complete")
+    time.sleep(2)
     data_a = {
-  "username": "yash",
-  "uuid": "item5",
-  "Contractuuid": "item5",
+  "username": "dhrumil",
+  "uuid": "item6",
+  "Contractuuid": "item6",
   "date": str(datetime.date.today()),
   "description": "Stolen",
   "isTheft": True
 }
     result = requests.post("http://localhost:3000/api/FileClaim",headers={"Authorization":"Bearer "+a['token']},json=data_a)
     print(result.text)  
-    data_o = {"uuid": "item5",
-    "Contractuuid": 'item5',
-    "username":"yash",
+    data_o = {"uuid": "item6",
+    "Contractuuid": 'item6',
+    "username":"dhrumil",
     "status":"ClaimStatusReimbursement",
     "reimbursable":True,
     }
