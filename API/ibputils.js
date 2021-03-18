@@ -268,7 +268,7 @@ utils.SetActiveContractType = async function(uuid,active) {
     }
 }
 
-utils.CreateContractType = async function(uuid,dict) {
+utils.CreateContractType = async function(uuid,Contractuuid,shopType,formulaPerDay,maxSumInsured,theftInsured,description,conditions,minDurationDays ,maxDurationDays) {
      
   const connectionProfileJson = ( fs.readFileSync('gatewayv2/InsuranceOrg1GatewayConnection.json')).toString();
     const connectionProfile = JSON.parse(connectionProfileJson);
@@ -288,7 +288,7 @@ utils.CreateContractType = async function(uuid,dict) {
         const transaction = contract.createTransaction('createContractType');
         res['txId']=transaction.getTransactionId();
             
-        await transaction.submit( uuid,dict );
+        await transaction.submit( uuid,Contractuuid,shopType,formulaPerDay,maxSumInsured,theftInsured,description,conditions,minDurationDays ,maxDurationDays );
         console.log('Transaction has been submitted');
         await network.addBlockListener(async (event) => {
           // Handle block event

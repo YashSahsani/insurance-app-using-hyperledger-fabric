@@ -239,11 +239,19 @@ app.post('/api/CreateContractType',verifyToken, (req,res) =>{
           res.sendStatus(403);
         }else{
 let uuid  = req.body.uuid;
-let  dict = req.body.dict;
+let  Contractuuid = req.body.Contractuuid;
+let shopType = req.body.shopType;
+
+let formulaPerDay  = req.body.formulaPerDay;
+let  maxSumInsured = req.body.maxSumInsured;
+let theftInsured = req.body.theftInsured;
+let description  = req.body.description;
+let  conditions = req.body.conditions;
+let minDurationDays = req.body.minDurationDays;
+let maxDurationDays = req.body.maxDurationDays;
 
 
-
-utils.CreateContractType(uuid,dict)
+utils.CreateContractType(uuid,Contractuuid,shopType,formulaPerDay,maxSumInsured,theftInsured,description,conditions,minDurationDays ,maxDurationDays)
     .then(result =>{
         res.json({'errorCode':result})
     }, (error) => {
@@ -261,7 +269,8 @@ app.post('/api/SetActiveContractType',verifyToken, (req,res) =>{
         }else{
 let uuid  = req.body.uuid;
 let  active = req.body.active;
-
+console.log(uuid);
+console.log(active);
 
 
 utils.SetActiveContractType(uuid,active)
