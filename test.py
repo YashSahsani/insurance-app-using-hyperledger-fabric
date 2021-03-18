@@ -7,7 +7,7 @@ for i in range(10):
     a = json.loads(requests.post("http://localhost:3000/api/login",json=data).text)
     print(a)
     print("json token generated for post request")
-    #data_n = {"uuid": "item5","contractuuid": "item5","username": "yash","password": "yashpw","fname": "yash","lname": "Sahsani","sdate": str(datetime.date.today()), "ldate": str(datetime.date.today() + datetime.timedelta(10))}
+    data_n = {"uuid": "item5","contractuuid": "item5","username": "yash","password": "yashpw","fname": "yash","lname": "Sahsani","sdate": str(datetime.date.today()), "ldate": str(datetime.date.today() + datetime.timedelta(10))}
     #result = requests.post("http://localhost:3000/api/CreateContract",headers={"Authorization":"Bearer "+a['token']},json=data_n)
     #print(result.text)
     #data_n = {"uuid": "item5",
