@@ -216,10 +216,10 @@ app.post('/api/ProcessTheftClaim',verifyToken, (req,res) =>{
         if(err) {
           res.sendStatus(403);
         }else{
-let uuid  = req.body.username;
-let  contractUUID = req.body.password;
-let IsTheft  = req.body.username;
-let  file_refrence = req.body.password;
+let uuid  = req.body.uuid;
+let  contractUUID = req.body.Contractuuid;
+let IsTheft  = req.body.IsTheft;
+let  file_refrence = req.body.file_refrence;
 
 
 utils.ProcessTheftClaim(uuid,contractUUID,IsTheft,file_refrence)

@@ -36,11 +36,18 @@ for i in range(10):
 }
     result = requests.post("http://localhost:3000/api/FileClaim",headers={"Authorization":"Bearer "+a['token']},json=data_a)
     print(result.text)  
-    data_o = {"uuid": "item5",
+    data_b = {"uuid": "item5",
     "Contractuuid": 'item5',
     "username":"yash",
     "status":"ClaimStatusReimbursement",
     "reimbursable":True,
+    }
+    result = requests.post("http://localhost:3000/api/ProcessClaim",headers={"Authorization":"Bearer "+a['token']},json=data_o)
+    print(result.text)
+    data_o = {"uuid": "item5",
+    "Contractuuid": 'item5',
+    "IsTheft":True,
+    "file_reference":"file1"
     }
     result = requests.post("http://localhost:3000/api/ProcessClaim",headers={"Authorization":"Bearer "+a['token']},json=data_o)
     print(result.text)
