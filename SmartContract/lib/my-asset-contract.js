@@ -214,31 +214,37 @@ class MyAssetContract extends Contract {
         const contract = JSON.parse(buffer.toString());
         switch(input.status){
             case "ClaimStatusRepair":
-                if(claim.isTheft){
+                if(claim.isTheft == "false"){
                     throw Error("Cannot repair stolen items.");
                 }
-                claim.Reimbursable = 0;
-                contractItem = contract.item;
-                inputUUID = input.uuid
-                inputContractUUID = input.Contractuuid
+                claim['reimbursable'] = 0;
+                let contractItem = contract.item;
+                let inputUUID = input.uuid
+                let inputContractUUID = input.Contractuuid
                 const repairOrder = { contractItem, inputUUID, inputContractUUID, "ready":false };
-                repairOrderKey = ctx.stub.createCompositeKey(prefixRepairOrder, [input.uuid]);
+                let repairOrderKey = ctx.stub.createCompositeKey(prefixRepairOrder, [input.uuid]);
                 buffer = Buffer.from(JSON.stringify(repairOrder));
                 await ctx.stub.putState(repairOrderKey, buffer);
+                buffer = Buffer.from(JSON.stringify(claim));
+                await ctx.stub.putState(claimKey,buffer);
                 break;
 
             case "ClaimStatusReimbursement":
-                claim.reimbursable = input.reimbursable;
-                if(claim.isTheft){
-                    contract.void = true;
-                    var newContractKey = ctx.stub.createCompositeKey(prefixContract, [contract.username, claim.Contractuuid]);
+                claim['reimbursable'] = input.reimbursable;
+                if(claim['is_theft'] == "true"){
+                    contract['void'] = true;
+                    var newContractKey = ctx.stub.createCompositeKey(perfixContract, [username, Contractuuid]);
                     buffer = Buffer.from(JSON.stringify(contract));
                     await ctx.stub.putState(newContractKey, buffer);
+                    buffer = Buffer.from(JSON.stringify(claim));
+                    await ctx.stub.putState(claimKey,buffer);
                 }
                 break;
 
             case "ClaimStatusRejected":
-                claim.Reimbursable = 0;
+                claim['reimbursable'] = 0;
+                buffer = Buffer.from(JSON.stringify(claim));
+                await ctx.stub.putState(claimKey,buffer);
                 break;
 
             default:
@@ -337,16 +343,16 @@ class MyAssetContract extends Contract {
         let key = await ctx.stub.createCompositeKey(perfixClaim,[contractUUID,uuid]);
         let claimAsBytes = await ctx.stub.getState(key);
         let claim = JSON.parse(claimAsBytes.toString());
-        if(!claim.is_theft || claim.status != 'ClaimStatusNew'){
+        if(claim.is_theft == "false" || claim.status != 'ClaimStatusNew'){
             throw new Error("Claim is either not related to theft, or has invalid status.");
 
         }
         
         if(IsTheft){
 
-            claim['Status'] = 'ClaimStatusTheftConfirmed';
+            claim['status'] = 'ClaimStatusTheftConfirmed';
         }else{
-            claim['Status'] = 'ClaimStatusRejected';
+            claim['status'] = 'ClaimStatusRejected';
         }
         claim['FileReference'] = file_refrence;
 
