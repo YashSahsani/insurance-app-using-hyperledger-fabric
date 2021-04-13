@@ -1,2 +1,2 @@
-set MICROFAB_CONFIG={"port":8081,  "endorsing_organizations": [{"name": "Police"},{"name": "Shop"},{"name": "Insurance"},{"name": "Repair"}],"channels": [{"name": "mychannel","endorsing_organizations": ["Shop", "Insurance","Police","Repair"]}]} 
-docker run -p 8081:8081 -e MICROFAB_CONFIG ibmcom/ibp-microfab
+set MICROFAB_CONFIG={"port":8083,  "endorsing_organizations": [{"name": "Police"},{"name": "Shop"},{"name": "Insurance"},{"name": "Repair"}],"channels": [{"name": "mychannel","endorsing_organizations": ["Shop", "Insurance","Police","Repair"]}]} 
+docker run -p 8083:8083 -e MICROFAB_CONFIG ibmcom/ibp-microfab

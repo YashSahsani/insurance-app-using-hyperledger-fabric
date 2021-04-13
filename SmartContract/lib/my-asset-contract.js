@@ -56,10 +56,16 @@ class MyAssetContract extends Contract {
                     console.log(err);
                     Record = res.value.value.toString('utf8');
                 }
-                allResults.push({
-                    Key,
-                    Record
-                });
+                
+                  
+
+                    if(Record.active == "true" && Record.shopType == shop_type){
+                        allResults.push({
+                            Key,
+                            Record
+                        });
+                    }
+                
             }
             if (res.done) {
                 console.log('end of data');
@@ -87,7 +93,7 @@ class MyAssetContract extends Contract {
                 console.log(res.value.value.toString('utf8'));
 
                 const Key = res.value.key;
-                let Record;
+                let Record,claim;
                 try {
                     Record = JSON.parse(res.value.value.toString('utf8'));
 
@@ -95,9 +101,18 @@ class MyAssetContract extends Contract {
                     console.log(err);
                     Record = res.value.value.toString('utf8');
                 }
+                if(username.length != 0 && Record.claimIndex.length != 0){
+                    let claimBytes = await ctx.stub.getState(Record.claimIndex);
+                     claim = JSON.parse(claimBytes.toString());
+                    
+                }
+                else{
+                     claim = "NIL";
+                }
                 allResults.push({
                     Key,
-                    Record
+                    Record,
+                    claim
                 });
             }
             if (res.done) {
@@ -151,7 +166,7 @@ class MyAssetContract extends Contract {
         }
         var  repairOrder  = JSON.parse(repairOrderBytes.toString());
         repairOrder['Ready'] == true;// changes are required in list repair function if ready and than skip 
-        repairOrderBytes = await Buffer.from(JSON.stringify(repairOrder));
+        repairOrderBytes =  Buffer.from(JSON.stringify(repairOrder));
         await ctx.stub.putState(repairOrderKey,repairOrderBytes);
 
         let ClaimKey = await ctx.stub.createCompositeKey(prefixClaim, [repairOrder.ContractUUID ,repairOrder.ClaimUUID]);
@@ -190,7 +205,7 @@ class MyAssetContract extends Contract {
         if(!claim.is_theft && claim.status != "ClaimStatusNew"){
             throw new Error("Cannot change the status of a non-new claim.");
         }
-        if(claim.is_theft && claim.status == "ClaimStatusNew"){
+        if(claim.is_theft && claim.Status == "ClaimStatusNew"){
             throw new Error("Theft must first be confirmed by authorities.");
         }
         claim.status = input.status;
@@ -250,6 +265,17 @@ class MyAssetContract extends Contract {
                 } catch (err) {
                     console.log(err);
                     Record = res.value.value.toString('utf8');
+                }
+
+                if(Record.status != status && status != "ClaimStatusUnknown"){
+                    continue;
+                }
+                let keys = ctx.stub.splitCompositeKey(Key);
+                
+                if(keys.length < 2){
+                    Record.uuid = keys[0];
+                }else{
+                    Record.uuid = keys[1];
                 }
                 allResults.push({
                     Key,
